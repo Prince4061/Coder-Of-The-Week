@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prince Learning Hub</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header Section -->
+        <header class="main-header glass">
+            <div class="logo-container">
+                <img src="https://princetech.org.in/static/media/wl_client_images/dd224fe3684344bd8e69f6375ca7b9a8.png" alt="Prince Tech Logo" class="brand-logo floating-logo">
+                <div class="title-container">
+                    <h2 class="super-title">Prince Learning Hub</h2>
+                    <h1 class="main-title">Coder Of the Week</h1>
+                </div>
+            </div>
+        </header>
+
+        <main class="home-layout">
+            <!-- Action Card 1: Start Test -->
+            <div class="action-card glass" onclick="window.location.href='/test'">
+                <div class="card-content">
+                    <div class="icon-wrapper blue-glow bounce-hover">
+                        📝
+                    </div>
+                    <h2>Start New Test</h2>
+                    <button class="primary-btn mt-auto glow-on-hover">Take a Test</button>
+                </div>
+            </div>
+
+            <!-- Action Card 2: Top Performers -->
+            <div class="action-card glass" onclick="window.location.href='/leaderboard'">
+                <div class="card-content">
+                    <div class="icon-wrapper gold-glow bounce-hover">
+                        🏆
+                    </div>
+                    <h2>Top Performers</h2>
+                    <button class="secondary-btn mt-auto glow-on-hover">View Leaderboard</button>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
