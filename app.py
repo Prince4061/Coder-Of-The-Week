@@ -2,6 +2,10 @@ from flask import Flask, render_template, request, jsonify, send_file
 import csv
 import json
 import os
+from dotenv import load_dotenv
+load_dotenv(override=True)
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import PromptTemplate
 
 app = Flask(__name__)
 DB_FILE = 'scores.csv'
@@ -165,10 +169,20 @@ def submit_test():
     
     all_qs = load_questions()
     score = 0
+    analysis_data = []
+    
     for q in all_qs:
-        ans = answers.get(str(q['id']))
-        if ans and ans.lower() == str(q.get('answer', '')).lower():
+        ans_key = answers.get(str(q['id']))
+        correct_key = q.get('answer', '')
+        
+        user_answered = q.get('options', {}).get(ans_key, 'Skipped')
+        correct_answer = q.get('options', {}).get(correct_key, 'Unknown')
+        
+        is_correct = (ans_key and ans_key.lower() == str(correct_key).lower())
+        if is_correct:
             score += 1
+            
+        analysis_data.append(f"Q: {q['text']} | Student: {user_answered} | Correct: {correct_answer} | Is Correct: {is_correct}")
             
     users = read_db()
     new_id = str(len(users) + 1)
@@ -179,7 +193,51 @@ def submit_test():
     })
     write_db(users)
     
-    return jsonify({"success": True, "score": score, "total": len(all_qs), "message": "Test submitted successfully!"})
+    # LangChain Integration
+    ai_feedback = "AI Feedback..."
+    try:
+        llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0.7)
+        prompt = PromptTemplate.from_template(
+            "You are an encouraging AI tutor playing the role of an Indian teacher.\n"
+            "Student Name: {name}\n"
+            "Score: {score}/{total}\n"
+            "Test Details:\n{test_data}\n\n"
+            "Analyze the student's performance and provide feedback STRICTLY in 'Hinglish' (Hindi language written using English alphabet, e.g. 'Tumne acha perform kiya hai').\n"
+            "Return the output STRICTLY as a JSON object with the following keys. The values for all these keys MUST be in Hinglish:\n"
+            "- \"strength\": 1-2 sentence about their strong areas in Hinglish.\n"
+            "- \"weakness\": 1-2 sentence about their weak areas in Hinglish.\n"
+            "- \"suggestion\": Actionable advice in Hinglish on how they can improve.\n"
+            "Do NOT include any markdown formatting like ```json, just return the raw JSON object."
+        )
+        chain = prompt | llm
+        response = chain.invoke({
+            "name": name,
+            "test_data": "\n".join(analysis_data),
+            "score": score,
+            "total": len(all_qs)
+        })
+        
+        content = response.content.strip()
+        if content.startswith("```json"):
+            content = content[7:]
+        if content.startswith("```"):
+            content = content[3:]
+        if content.endswith("```"):
+            content = content[:-3]
+            
+        import json
+        ai_data = json.loads(content.strip())
+        
+        ai_feedback = f"""
+            <div style='margin-bottom: 0.8rem;'><strong style='color:#34d399;'>💪 Strength:</strong> {ai_data.get('strength', 'N/A')}</div>
+            <div style='margin-bottom: 0.8rem;'><strong style='color:#f87171;'>⚠️ Weakness:</strong> {ai_data.get('weakness', 'N/A')}</div>
+            <div><strong style='color:#fbbf24;'>💡 Suggestion:</strong> {ai_data.get('suggestion', 'N/A')}</div>
+        """
+    except Exception as e:
+        print(f"LLM Error: {e}")
+        ai_feedback = "Tumhara score bohot accha hai! Keep practicing!"
+    
+    return jsonify({"success": True, "score": score, "total": len(all_qs), "feedback": ai_feedback, "message": "Test submitted successfully!"})
 
 @app.route('/api/leaderboard', methods=['GET'])
 def get_leaderboard():

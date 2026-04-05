@@ -189,8 +189,8 @@
             
             <!-- Wrapping the card in a fixed-size container for perfect PDF exporting -->
             <div id="reportCard" class="glass" style="width: 500px; padding: 3rem; border-radius: 1.5rem; position: relative; background: linear-gradient(135deg, #0f172a, #1e293b); margin-bottom: 2rem; border: 1px solid rgba(59,130,246,0.3); text-align: center;">
-                <img src="https://princetech.org.in/static/media/wl_client_images/dd224fe3684344bd8e69f6375ca7b9a8.png" crossorigin="anonymous" alt="Logo" style="height:70px; margin-bottom:1rem;">
-                <h2 style="font-size: 2rem; margin-bottom: 0.5rem; background: linear-gradient(135deg, #fff 0%, #cbd5e1 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Prince Learning Hub</h2>
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" style="height:70px; margin-bottom:1rem;">
+                <h2 style="font-size: 2rem; margin-bottom: 0.5rem; color: #f8fafc; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">Prince Learning Hub</h2>
                 <p style="color: #64748b; font-size: 1rem;">Official Assessment Report</p>
                 
                 <div style="background: rgba(255,255,255,0.03); border-radius: 1rem; border: 1px solid rgba(255,255,255,0.05); padding: 2rem; margin-top: 2rem;">
@@ -203,7 +203,12 @@
                     </div>
                 </div>
                 
-                <p style="color: rgba(255,255,255,0.2); font-size:0.8rem; margin-top:2.5rem; letter-spacing: 1px;">Document generated at completion of standard assessment</p>
+                <div style="background: rgba(59, 130, 246, 0.05); border-radius: 1rem; border: 1px solid rgba(59, 130, 246, 0.2); padding: 1.5rem; margin-top: 1.5rem; text-align: left;">
+                    <p style="color: #60a5fa; font-size: 0.9rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem;">✨ AI Performance Analysis</p>
+                    <p id="rcFeedback" style="color: #cbd5e1; font-size: 0.95rem; line-height: 1.5; margin: 0;">Analyzing performance...</p>
+                </div>
+                
+                <p style="color: rgba(255,255,255,0.2); font-size:0.8rem; margin-top:2rem; letter-spacing: 1px;">Document generated at completion of standard assessment</p>
             </div>
             
             <div style="display: flex; justify-content: center; gap: 1rem;">
@@ -216,7 +221,7 @@
     <!-- Main Test Container -->
     <div class="app-container test-container" style="display:none;" id="mainTestContent">
         <header style="text-align:center; margin-bottom: 2rem;">
-            <img src="https://princetech.org.in/static/media/wl_client_images/dd224fe3684344bd8e69f6375ca7b9a8.png" alt="Logo" style="height:50px; margin-bottom:1rem;">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" style="height:50px; margin-bottom:1rem;">
             <h1>Prince Learning Hub</h1>
             <p style="color:#94a3b8;">Assessment in Progress</p>
         </header>
@@ -395,6 +400,7 @@
                     // Show Report Card
                     document.getElementById('rcName').innerText = studentName;
                     document.getElementById('rcScore').innerText = data.score;
+                    document.getElementById('rcFeedback').innerHTML = data.feedback || "Good effort! Keep practicing.";
                     scorecardModal.style.display = 'flex';
                 } else {
                     alert("Submission failed: " + data.message);
@@ -423,17 +429,21 @@
                 const imgData = canvas.toDataURL('image/jpeg', 0.8);
                 const { jsPDF } = window.jspdf;
                 
+                const dummyPdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+                const pdfWidth = dummyPdf.internal.pageSize.getWidth();
+                const margin = 15; 
+                const imgWidth = pdfWidth - (margin * 2);
+                
+                const imgProps = dummyPdf.getImageProperties(imgData);
+                const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+                
+                const requiredHeight = imgHeight + 40;
+                
                 const pdf = new jsPDF({
                     orientation: 'portrait',
                     unit: 'mm',
-                    format: 'a4'
+                    format: [pdfWidth, Math.max(297, requiredHeight)]
                 });
-                
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const margin = 15; 
-                const imgWidth = pdfWidth - (margin * 2);
-                const imgProps = pdf.getImageProperties(imgData);
-                const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
                 
                 pdf.addImage(imgData, 'JPEG', margin, 20, imgWidth, imgHeight);
                 
